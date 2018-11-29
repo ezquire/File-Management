@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 
-static int *pagetable;
+static uint32_t *pagetable;
 
 // Utility function for turning byte counts into bit counts
 //int bytes_to_bits(int num_bytes) { return num_bytes * 8; }
@@ -33,7 +33,7 @@ int main (int argc, char ** argv) {
 	printf ("npages: %d\n", npages);
 
 	//Allocate space for the page table #of pages = 2^(vbits - obits) 
-	pagetable = malloc(npages * sizeof(int));
+	pagetable = malloc(npages * sizeof(uint32_t));
 
 	/*printf("vbits: %d\n", vbits);
 	printf("pbits: %d\n", pbits);
