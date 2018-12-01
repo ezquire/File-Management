@@ -6,8 +6,48 @@
 
 static uint32_t *pagetable;
 
-// Utility function for turning byte counts into bit counts
-//int bytes_to_bits(int num_bytes) { return num_bytes * 8; }
+// Utility function to extract the page number from the entry
+uint32_t extract_page(int table_entry, int page_bits) { 
+    return (((1 << page_bits) - 1) & (table_entry >> 1)); 
+}
+
+// Utility function to truncate bit strings to a set number of bits
+uint32_t truncate(int input, int num_bits) {
+	return (((1 << num_bits) - 1) & (input));
+}
+
+
+// Utility function to convert hex to decimal and truncate address if needed
+uint32_t process_address(char addr[], int max_addr, int vbits) {
+	int len = strlen(addr);
+	int base = 1;
+	uint32_t ret = 0;
+
+	if (addr[0] == '0' && addr[1] == 'x')
+		addr += 2;
+	
+	for (int i=len-1; i>=0; i--) {
+		if (addr[i] >= '0' && addr[i] <= '9') {
+			ret += (addr[i] - 48) * base;
+			base *= 16;
+		}
+		else if (addr[i] >= 'A' && addr[i] <= 'F') {
+			ret += (addr[i] - 55) * base;
+			base *= 16;
+		}
+		else if (addr[i] >= 'a' && addr[i] <= 'f') {
+			ret += (addr[i] - 87) * base;
+			base *= 16;
+		}
+	}
+
+	if(ret > max_addr) {
+		printf("Given address is greater than the max allowed, truncating\n");
+		ret = truncate(ret, vbits);
+		printf("New Address: 0x%X\n", ret);
+	}	
+	return ret;
+}
 
 int main (int argc, char ** argv) {
 
@@ -28,28 +68,56 @@ int main (int argc, char ** argv) {
 
 	fscanf(fptr, "%d %d %d", &vbits, &pbits, &bytes);
 
-	int obits = (int)log2(bytes);
-	int npages = (int)pow(2, (vbits - obits));
-	printf ("npages: %d\n", npages);
+	int off_bits = (int)log2(bytes);
+	int index_bits = vbits - off_bits;
+	int page_bits = pbits - off_bits;
+	int entry_bits = page_bits + 3; // Three extra bits for valid, perm, use
+	//int valid_mask = (int)pow(2, entry_bits);
+	int perm_mask = (int)pow(2, entry_bits - 1);
+	int npages = (int)pow(2, index_bits);
+	int max_v_addr = (int)pow(2, vbits) - 1;
 
-	//Allocate space for the page table #of pages = 2^(vbits - obits) 
+	// Allocate space for pagetable
 	pagetable = malloc(npages * sizeof(uint32_t));
 
-	/*printf("vbits: %d\n", vbits);
-	printf("pbits: %d\n", pbits);
-	printf("bytes: %d\n", bytes);*/
-
-    int in;
+	int i = 0;
+	int in;
 	while((in = fgetc(fptr)) != EOF) {
 		fscanf(fptr, "%d %d %d %d", &valid, &perm, &page, &use);
+		pagetable[i] |= ((valid << 1) | perm); // add valid and perm bits
+		pagetable[i] <<= page_bits; // make room for page number
+		pagetable[i] |= page; // add page number
+		pagetable[i] <<= 1; // make room for "use" bit
+		pagetable[i] |= use; // add "use" bit
+		++i;
 	}
-
-	/*printf("valid: %d\n", valid);
-	printf("perm: %d\n", perm);
-	printf("page: %d\n", page);
-	printf("use: %d\n", use);*/
-
-	free(pagetable);
 	fclose(fptr);
+
+	char virtual_address[22]; // is 22 enough?
+	printf("Enter a virtual address in hexadecimal: ");
+	fgets(virtual_address, 22, stdin);
+	printf("Address read: %s", virtual_address);
+	
+	uint32_t dec_addr = process_address(virtual_address, max_v_addr, vbits);
+	uint32_t offset = truncate(dec_addr, off_bits);
+	int index = dec_addr >> off_bits;
+
+	printf("Index into page table: %d\n", index);
+	printf("Offset: %d\n", offset);
+
+	int entry = pagetable[index];
+	printf("Page entry: %d\n", entry);
+	int page_number = extract_page(entry, page_bits);	
+
+	if((entry & perm_mask) == 0) // SEGFAULT;
+		printf("SEGFAULT\n");
+
+	uint32_t phys_addr = (page_number << off_bits) | offset;
+
+	printf("Physical Address: 0x%X\n", phys_addr);
+
+	// Free allocated memory
+	free(pagetable);
+
 	return 0;
 }
