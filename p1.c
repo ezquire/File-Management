@@ -75,7 +75,6 @@ int main (int argc, char ** argv) {
 	int valid_mask = (int)pow(2, entry_bits - 1);
 	int perm_mask = (int)pow(2, entry_bits - 2);
 	int vpages = (int)pow(2, index_bits);
-	//int ppages = (int)pow(2, page_bits);
 	int max_v_addr = (int)pow(2, vbits) - 1;
 
 	// Allocate space for pagetable
@@ -97,17 +96,11 @@ int main (int argc, char ** argv) {
 	char virtual_address[22]; // is 22 enough?
 	printf("Enter a virtual address in hexadecimal: ");
 	fgets(virtual_address, 22, stdin);
-	printf("Virtual Address read: %s", virtual_address);
-	
+	//printf("Virtual Address read: %s", virtual_address);	
 	uint32_t dec_addr = process_address(virtual_address, max_v_addr, vbits);
 	uint32_t offset = truncate(dec_addr, off_bits);
 	int index = dec_addr >> off_bits;
-
-	//printf("Index into page table: %d\n", index);
-	//printf("Offset: 0x%X\n", offset);
-
 	int entry = pagetable[index];
-	//printf("Page entry: 0x%X\n", entry);
 
 	if((entry & perm_mask) == 0)
 		printf("SEGFAULT\n");
