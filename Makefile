@@ -4,9 +4,12 @@ CC = gcc
 srcs = $(wildcard *.c)
 objs = $(srcs:.c=.o)
 
-all: p1.x p2.x p3.x
+all: p1.x p3.x
 
-p1.x: $(objs)
+p1.x: p1.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+p3.x: p3.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
