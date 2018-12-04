@@ -92,7 +92,7 @@ int main (int argc, char ** argv) {
 		++i;
 	}
 	fclose(fptr);
-
+printf("%x",pagetable[1]);
 	char virtual_address[22]; // is 22 enough?
 	printf("Enter a virtual address in hexadecimal: ");
 	fgets(virtual_address, 22, stdin);
@@ -104,12 +104,38 @@ int main (int argc, char ** argv) {
 
 	if((entry & perm_mask) == 0)
 		printf("SEGFAULT\n");
-	else if((entry & valid_mask) == 0 && (entry & perm_mask) == perm_mask)
+	else if((entry & valid_mask) == 0 && (entry & perm_mask) == perm_mask) {
+		#ifdef PROB1
 		printf("DISK\n");
-	else {
+		#else
+		printf("PAGE FAULT\n");
+		int clockHand = 0;
+		int pageReplaced = 0;
+		while(!pageReplaced){
+			if((pagetable[clockHand] % 2) == 0) {
+				//clear old page and add new one
+				pagetable[clockHand] &= 0;
+
+				pageReplaced = 1;
+			} else {
+				pagetable[clockHand] -= 1;
+			}
+			clockHand++;
+			if (clockHand == vpages) {
+				clockHand = 0;
+			}	
+		}		
+		printf("new physical address: 0x%X\n", phys_addr);
+		#endif
+	} else {
 		int page_number = extract_page(entry, page_bits);
 		uint32_t phys_addr = (page_number << off_bits) | offset;
 		printf("Corresponding Physical Address: 0x%X\n", phys_addr);
+		#ifndef PROB1
+		if(entry % 2 != 0){
+			pagetable[index] += 1;
+		}
+		#endif
 	}
 
 	// Free allocated memory
@@ -117,3 +143,5 @@ int main (int argc, char ** argv) {
 
 	return 0;
 }
+
+
