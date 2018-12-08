@@ -107,9 +107,10 @@ int main (int argc, char ** argv) {
 	}
 	fclose(fptr);
 	char virtual_address[22]; // is 22 enough?
-	while(1){
-		printf("Enter a virtual address in hexadecimal: ");
-		fgets(virtual_address, 22, stdin);
+	printf("Enter a virtual address in hexadecimal (! to quit): ");
+	fgets(virtual_address, 22, stdin);
+	while(virtual_address[0] != '!'){
+
 		//printf("Virtual Address read: %s", virtual_address);	
 		uint32_t dec_addr = process_address(virtual_address, max_v_addr, vbits);
 		uint32_t offset = truncate(dec_addr, off_bits);
@@ -177,6 +178,8 @@ int main (int argc, char ** argv) {
 				}
 			}
 		}
+	printf("Enter a virtual address in hexadecimal (! to quit): ");
+	fgets(virtual_address, 22, stdin);
 	}
 	
 	// Free allocated memory
