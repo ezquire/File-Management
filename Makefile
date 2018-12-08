@@ -6,8 +6,8 @@ objs = $(srcs:.c=.o)
 
 all: p1.x p2.x p3.x
 
-p1.x: p1.o
-	$(CC) $(CFLAGS) -o $@ $^
+p1.x: p2.o
+	$(CC) $(CFLAGS) -o $@ p2.c -DPROB1
 
 p2.x: p2.o
 	$(CC) $(CFLAGS) -o $@ $^

@@ -76,12 +76,16 @@ int main (int argc, char ** argv) {
 	int perm_mask = (int)pow(2, entry_bits - 2);
 	int vpages = (int)pow(2, index_bits);
 	int max_v_addr = (int)pow(2, vbits) - 1;
-       	int ppages = (int)pow(2, page_bits);
+
+	int ppages = (int)pow(2, page_bits);
 	physicalPageTable = malloc(ppages * sizeof(uint32_t));		
+#ifdef PROB1
+#else
 	//initialize clockhand to index 0;
 	int clockHand = 0;
 	int virtual_index_mask = ((int)pow(2, index_bits) - 1) << (page_bits + 1);
 	int physical_page_mask = ((int)pow(2, page_bits) - 1) << 1;
+#endif
 	// Allocate space for pagetable
 	pagetable = malloc(vpages * sizeof(uint32_t));
 	int i = 0;
@@ -119,6 +123,9 @@ int main (int argc, char ** argv) {
 		if((entry & perm_mask) == 0)
 			printf("SEGFAULT\n");
 		else if((entry & valid_mask) == 0 && (entry & perm_mask) == perm_mask) {
+#ifdef PROB1
+			printf("DISK\n");
+#else
 			printf("PAGE FAULT\n");
 			int pageReplaced = 0;
 			uint32_t phys_addr;
@@ -162,6 +169,7 @@ int main (int argc, char ** argv) {
 				}	
 			}		
 			printf("Physical address: 0x%X\n", phys_addr);
+#endif
 		} else {
 			int page_number = extract_page(entry, page_bits);
 			uint32_t phys_addr = (page_number << off_bits) | offset;
