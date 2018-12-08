@@ -5,7 +5,6 @@
 #include <math.h>
 
 static uint32_t *pagetable;
-
 // Utility function to extract the page number from the entry
 uint32_t extract_page(int table_entry, int page_bits) { 
     return (((1 << page_bits) - 1) & (table_entry >> 1)); 
@@ -42,7 +41,7 @@ uint32_t process_address(char addr[], int max_addr, int vbits) {
 	}
 
 	if(ret > max_addr) {
-		printf("Given address is greater than the max allowed, truncating\n");
+		printf("Given address is greater than the max allowed, truncating...\n");
 		ret = truncate(ret, vbits);
 		printf("New Virtual Address: 0x%X\n", ret);
 	}	
@@ -79,7 +78,6 @@ int main (int argc, char ** argv) {
 
 	// Allocate space for pagetable
 	pagetable = malloc(vpages * sizeof(uint32_t));
-
 	int i = 0;
 	//int in;
 	while(fgetc(fptr) != EOF) {
@@ -92,55 +90,28 @@ int main (int argc, char ** argv) {
 		++i;
 	}
 	fclose(fptr);
-printf("%x",pagetable[1]);
 	char virtual_address[22]; // is 22 enough?
-	printf("Enter a virtual address in hexadecimal: ");
-	fgets(virtual_address, 22, stdin);
-	//printf("Virtual Address read: %s", virtual_address);	
-	uint32_t dec_addr = process_address(virtual_address, max_v_addr, vbits);
-	uint32_t offset = truncate(dec_addr, off_bits);
-	int index = dec_addr >> off_bits;
-	int entry = pagetable[index];
+	while(1){
+		printf("Enter a virtual address in hexadecimal: ");
+		fgets(virtual_address, 22, stdin);
+		//printf("Virtual Address read: %s", virtual_address);	
+		uint32_t dec_addr = process_address(virtual_address, max_v_addr, vbits);
+		uint32_t offset = truncate(dec_addr, off_bits);
+		int index = dec_addr >> off_bits;
+		int entry = pagetable[index];
 
-	if((entry & perm_mask) == 0)
-		printf("SEGFAULT\n");
-	else if((entry & valid_mask) == 0 && (entry & perm_mask) == perm_mask) {
-		#ifdef PROB1
-		printf("DISK\n");
-		#else
-		printf("PAGE FAULT\n");
-		int clockHand = 0;
-		int pageReplaced = 0;
-		while(!pageReplaced){
-			if((pagetable[clockHand] % 2) == 0) {
-				//clear old page and add new one
-				pagetable[clockHand] &= 0;
-
-				pageReplaced = 1;
-			} else {
-				pagetable[clockHand] -= 1;
-			}
-			clockHand++;
-			if (clockHand == vpages) {
-				clockHand = 0;
-			}	
-		}		
-		printf("new physical address: 0x%X\n", phys_addr);
-		#endif
-	} else {
-		int page_number = extract_page(entry, page_bits);
-		uint32_t phys_addr = (page_number << off_bits) | offset;
-		printf("Corresponding Physical Address: 0x%X\n", phys_addr);
-		#ifndef PROB1
-		if(entry % 2 != 0){
-			pagetable[index] += 1;
+		if((entry & perm_mask) == 0)
+			printf("SEGFAULT\n");
+		else if((entry & valid_mask) == 0 && (entry & perm_mask) == perm_mask) {
+			printf("DISK\n");
+		} else {
+			int page_number = extract_page(entry, page_bits);
+			uint32_t phys_addr = (page_number << off_bits) | offset;
+			printf("Corresponding Physical Address: 0x%X\n", phys_addr);
 		}
-		#endif
 	}
-
 	// Free allocated memory
 	free(pagetable);
-
 	return 0;
 }
 
