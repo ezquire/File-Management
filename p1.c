@@ -118,7 +118,7 @@ int main (int argc, char ** argv) {
 	fgets(virtual_address, 22, stdin);
 
 	while(virtual_address[0] != 'q') {
-		printf("Virtual Address read: %s", virtual_address);	
+		//printf("Virtual Address read: %s", virtual_address);	
 		uint32_t dec_addr =process_address(virtual_address, max_v_addr, vbits);
 		uint32_t offset = truncate(dec_addr, off_bits);
 		int index = dec_addr >> off_bits;
@@ -135,53 +135,24 @@ int main (int argc, char ** argv) {
 			while(!pageReplaced) {
 				//if use bit is 0 replace the page
 				if((physicalPageTable[clockHand] % 2) == 0) {
-
-					/*printf("replacing at clockHand: %d\n",clockHand);
-					  printf("old pagetable value before setting valid bit to 
-					  0: %X\n", pagetable[physicalPageTable[clockHand] >> 
-					  (1+page_bits)]);*/
-
 					//set valid bit at old index in virtual page table to 0
 					pagetable[physicalPageTable[clockHand] >> (1 + page_bits)]
 						^= valid_mask;
-
-					// printf("after: %X\n",
-					// pagetable[physicalPageTable[clockHand]
-					//                       >> (1+page_bits)]);
-
-					// printf("physicalPageTable value before mods: %X\n",
-					//        physicalPageTable[clockHand]);
-
-					
 					// update the physical page table
 					// clear old index bits
 					physicalPageTable[clockHand] &= ~virtual_index_mask; 
-
-					// printf("after xoring virtual index mask: %X\n",
-					//        physicalPageTable[clockHand]);
-
 					// add new index bits
 					physicalPageTable[clockHand] |= index << (page_bits + 1);
-
-					// printf("index(decimal): %d", index);
-					// printf("after adding the new index bits: %X\n",
-					//        physicalPageTable[clockHand]);
-
 					// set "use" bit to 1
 					physicalPageTable[clockHand] += 1;
-					// printf("after making usebit 1: %X\n",
-					//        physicalPageTable[clockHand]);	
-
 					// update the virtual page table 
 					pagetable[index] |= valid_mask; // set valid bit to 1
 					pagetable[index] &= ~physical_page_mask;
 					//set physical page number
 					pagetable[index] |= (physicalPageTable[clockHand] ^
 										 (virtual_index_mask + 1));
-					pagetable[index] |= 1;// set use bit to 1
+					pagetable[index] |= 1; // set use bit to 1
 
-					// printf("updated pagetable value at index %d: %X",
-					//         index, pagetable[index]);
 					int page_number = extract_page(pagetable[index],page_bits);
 					phys_addr = (page_number << off_bits) | offset;	
 					pageReplaced = 1;
@@ -196,17 +167,16 @@ int main (int argc, char ** argv) {
 						<<= 1;
 				}
 				clockHand++;
-				if (clockHand == j) {
+				if (clockHand == j)
 					clockHand = 0;
-				}	
 			}		
-			printf("New Physical address: 0x%X\n", phys_addr);
+			printf("Physical Address: 0x%X\n", phys_addr);
 #endif
 		}
 		else {
 			int page_number = extract_page(entry, page_bits);
 			uint32_t phys_addr = (page_number << off_bits) | offset;
-			printf("Corresponding Physical Address: 0x%X\n", phys_addr);
+			printf("Physical Address: 0x%X\n", phys_addr);
 			if(entry % 2 != 0){
 				pagetable[index] |= 1;
 				//for each resident page in the page table
