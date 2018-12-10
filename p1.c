@@ -5,8 +5,9 @@
 #include <math.h>
 
 static uint32_t *pagetable;
-static uint32_t *physicalPageTable;
-
+#ifndef PROB1
+static uint32_t *residentPageTable;
+#endif
 // Utility function to extract the page number from the entry
 uint32_t extract_page(int table_entry, int page_bits) { 
     return (((1 << page_bits) - 1) & (table_entry >> 1)); 
@@ -76,15 +77,16 @@ int main (int argc, char ** argv) {
 	int perm_mask = (int)pow(2, entry_bits - 2);
 	int vpages = (int)pow(2, index_bits);
 	int max_v_addr = (int)pow(2, vbits) - 1;
-	int ppages = (int)pow(2, page_bits);
-	int i = 0, j = 0;
+	int i = 0;
 
 	// Allocate space for pagetables
 	pagetable = malloc(vpages * sizeof(uint32_t));
-	physicalPageTable = malloc(ppages * sizeof(uint32_t));
 
-#ifdef PROB1
-#else
+#ifndef PROB1
+	int j = 0;
+	int ppages = (int)pow(2, page_bits);
+	residentPageTable = malloc(ppages * sizeof(uint32_t));
+
 	//initialize clockhand to index 0;
 	int clockHand = 0;
 	int virtual_index_mask = ((int)pow(2, index_bits) - 1) << (page_bits + 1);
@@ -98,16 +100,17 @@ int main (int argc, char ** argv) {
 		pagetable[i] |= page; // add page number
 		pagetable[i] <<= 1; // make room for "use" bit
 		pagetable[i] |= use; // add "use" bit
-		
+#ifndef PROB1		
 		//initialize physical page table
 		if(valid == 1 && perm == 1) {
-			physicalPageTable[j] |= i; // add index
-			physicalPageTable[j] <<= page_bits;// make room for virtual index
-			physicalPageTable[j] |= page; // add physical page number
-			physicalPageTable[j] <<= 1; // make room for "use" bit
-			physicalPageTable[j] |= use; // add "use" bit
+			residentPageTable[j] |= i; // add index
+			residentPageTable[j] <<= page_bits;// make room for virtual index
+			residentPageTable[j] |= page; // add physical page number
+			residentPageTable[j] <<= 1; // make room for "use" bit
+			residentPageTable[j] |= use; // add "use" bit
 			j++;
 		}
+#endif
 		++i;
 	}
 	fclose(fptr);
@@ -136,20 +139,21 @@ int main (int argc, char ** argv) {
 				//if use bit is 0 replace the page
 				if((physicalPageTable[clockHand] % 2) == 0) {
 					//set valid bit at old index in virtual page table to 0
-					pagetable[physicalPageTable[clockHand] >> (1 + page_bits)]
+					pagetable[residentPageTable[clockHand] >> (1 + page_bits)]
 						^= valid_mask;
-					// update the physical page table
+					// update the resident page table
 					// clear old index bits
-					physicalPageTable[clockHand] &= ~virtual_index_mask; 
+					residentPageTable[clockHand] &= ~virtual_index_mask; 
 					// add new index bits
-					physicalPageTable[clockHand] |= index << (page_bits + 1);
+					residentPageTable[clockHand] |= index << (page_bits + 1);
 					// set "use" bit to 1
-					physicalPageTable[clockHand] += 1;
+					residentPageTable[clockHand] += 1;
+
 					// update the virtual page table 
 					pagetable[index] |= valid_mask; // set valid bit to 1
 					pagetable[index] &= ~physical_page_mask;
 					//set physical page number
-					pagetable[index] |= (physicalPageTable[clockHand] ^
+					pagetable[index] |= (residentPageTable[clockHand] ^
 										 (virtual_index_mask + 1));
 					pagetable[index] |= 1; // set use bit to 1
 
@@ -158,12 +162,12 @@ int main (int argc, char ** argv) {
 					pageReplaced = 1;
 				}
 				else {
-					//change physicalPageTable "use" bit to 0;
-					physicalPageTable[clockHand] -= 1;
+					//change residentPageTable "use" bit to 0;
+					residentPageTable[clockHand] -= 1;
 					//change pageTable "use" bit to 0;
-					pagetable[physicalPageTable[clockHand] >> (1 +page_bits)]
+					pagetable[residentPageTable[clockHand] >> (1 +page_bits)]
 						>>= 1;
-					pagetable[physicalPageTable[clockHand] >> (1 +page_bits)]
+					pagetable[residentPageTable[clockHand] >> (1 +page_bits)]
 						<<= 1;
 				}
 				clockHand++;
@@ -177,15 +181,17 @@ int main (int argc, char ** argv) {
 			int page_number = extract_page(entry, page_bits);
 			uint32_t phys_addr = (page_number << off_bits) | offset;
 			printf("Physical Address: 0x%X\n", phys_addr);
+#ifndef PROB1
 			if(entry % 2 != 0){
 				pagetable[index] |= 1;
 				//for each resident page in the page table
 				for(int p = 0; i < j; p++)
 					// if the index is the same as the virtual index in the
 					// physical page table
-					if(index == (physicalPageTable[p] >> (page_bits + 1)))
-						physicalPageTable[p] |= 1; //set its "use" bit to 1	
+					if(index == (residentPageTable[p] >> (page_bits + 1)))
+						residentPageTable[p] |= 1; //set its "use" bit to 1	
 			}
+#endif
 		}
 		printf("Enter a virtual address in hexadecimal (q to quit): ");
 		fgets(virtual_address, 22, stdin);
@@ -193,6 +199,8 @@ int main (int argc, char ** argv) {
 
 	// Free allocated memory
 	free(pagetable);
-	free(physicalPageTable);
+#ifndef PROB1
+	free(residentPageTable);
+#endif
 	return 0;
 }
