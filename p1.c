@@ -101,7 +101,7 @@ int main (int argc, char ** argv) {
 		pagetable[i] <<= 1; // make room for "use" bit
 		pagetable[i] |= use; // add "use" bit
 #ifndef PROB1		
-		//initialize physical page table
+		//initialize resident page table
 		if(valid == 1 && perm == 1) {
 			residentPageTable[j] |= i; // add index
 			residentPageTable[j] <<= page_bits;// make room for virtual index
@@ -137,7 +137,7 @@ int main (int argc, char ** argv) {
 			uint32_t phys_addr;
 			while(!pageReplaced) {
 				//if use bit is 0 replace the page
-				if((physicalPageTable[clockHand] % 2) == 0) {
+				if((residentPageTable[clockHand] % 2) == 0) {
 					//set valid bit at old index in virtual page table to 0
 					pagetable[residentPageTable[clockHand] >> (1 + page_bits)]
 						^= valid_mask;
@@ -187,7 +187,7 @@ int main (int argc, char ** argv) {
 				//for each resident page in the page table
 				for(int p = 0; i < j; p++)
 					// if the index is the same as the virtual index in the
-					// physical page table
+					// resident page table
 					if(index == (residentPageTable[p] >> (page_bits + 1)))
 						residentPageTable[p] |= 1; //set its "use" bit to 1	
 			}
